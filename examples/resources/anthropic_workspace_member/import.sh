@@ -1,0 +1,1 @@
+terraform import anthropic_workspace_member.platform_dev wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ:user_01WCz1FkmYMm4gnmykNKUu3Q

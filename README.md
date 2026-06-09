@@ -1,6 +1,6 @@
 # terraform-provider-anthropic
 
-[![ci](https://github.com/sauter-digital/terraform-provider-anthropic/actions/workflows/ci.yml/badge.svg)](https://github.com/sauter-digital/terraform-provider-anthropic/actions/workflows/ci.yml)
+[![ci](https://github.com/sauterdigital/terraform-provider-anthropic/actions/workflows/ci.yml/badge.svg)](https://github.com/sauterdigital/terraform-provider-anthropic/actions/workflows/ci.yml)
 
 Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin). Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, and exposes usage / cost / Claude Code reports as data sources for FinOps pipelines.
 
@@ -21,7 +21,7 @@ This provider's scope is **the full Admin API surface**, with first-class data s
 terraform {
   required_providers {
     anthropic = {
-      source  = "sauter-digital/anthropic"
+      source  = "sauterdigital/anthropic"
       version = "~> 0.1"
     }
   }
@@ -98,7 +98,7 @@ To use a local build in a real config without publishing, add a `dev_overrides` 
 ```hcl
 provider_installation {
   dev_overrides {
-    "sauter-digital/anthropic" = "/path/to/your/$GOPATH/bin"
+    "sauterdigital/anthropic" = "/path/to/your/$GOPATH/bin"
   }
   direct {}
 }

@@ -1,0 +1,16 @@
+terraform-provider-anthropic
+*.exe
+dist/
+
+# Terraform state from examples / acceptance test runs
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store

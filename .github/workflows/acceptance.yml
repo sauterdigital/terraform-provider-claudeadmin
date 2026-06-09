@@ -1,0 +1,40 @@
+name: acceptance
+
+# Acceptance tests are gated behind workflow_dispatch — they hit the real
+# Anthropic Admin API, mutate organization state (create and archive
+# workspaces, etc.), and cost money. They never run automatically on push or PR.
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "I understand acceptance tests will mutate the org and incur cost"
+        required: true
+        type: choice
+        options: ["yes"]
+
+permissions:
+  contents: read
+
+jobs:
+  testacc:
+    name: TF_ACC=1 ./...
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TF_ACC: "1"
+      ANTHROPIC_ADMIN_API_KEY: ${{ secrets.ANTHROPIC_ADMIN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.*"
+          terraform_wrapper: false
+
+      - name: acceptance tests
+        run: go test -v -timeout 30m ./internal/provider/...

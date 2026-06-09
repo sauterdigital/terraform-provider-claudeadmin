@@ -1,0 +1,1 @@
+terraform import anthropic_workspace.example wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ

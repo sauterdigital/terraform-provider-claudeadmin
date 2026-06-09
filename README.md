@@ -111,6 +111,14 @@ Then `make install` and run `terraform plan` against `examples/`.
 
 - [`ci.yml`](./.github/workflows/ci.yml) runs on every push/PR: build, vet, gofmt, race-enabled unit tests, `terraform fmt` on examples, and a docs-drift check.
 - [`acceptance.yml`](./.github/workflows/acceptance.yml) is `workflow_dispatch` only — acceptance tests mutate the real organization and incur API cost, so they never run automatically. Requires `ANTHROPIC_ADMIN_API_KEY` in repo secrets.
+- [`release.yml`](./.github/workflows/release.yml) fires on `v*` tag push: builds signed, multi-arch artifacts via goreleaser, attaches them to a GitHub Release, and includes the `terraform-registry-manifest.json` the Terraform Registry needs to ingest the release. Requires `GPG_PRIVATE_KEY` and `PASSPHRASE` repo secrets.
+
+## Publishing a release
+
+1. Confirm `go test -race ./...` passes locally and `make docs` shows no diff.
+2. Bump the version, commit, then tag: `git tag -a v0.X.Y -m "..."` and `git push origin v0.X.Y`.
+3. The `release` workflow builds the binaries, signs the checksum file with the GPG key, and creates a draft-less GitHub Release.
+4. First-time only: register the provider at https://registry.terraform.io/publish/provider — point it at this repo and upload the matching GPG public key. Subsequent releases are picked up automatically when the workflow finishes.
 
 ## Scope notes
 

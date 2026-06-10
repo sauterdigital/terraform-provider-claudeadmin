@@ -31,19 +31,19 @@ Feature-complete v0.1: full Admin API surface, validators on every enum, retry/b
 | `anthropic_organization_member` | Update-only — users join via accepted invite. `Create` requires existing user id, sets role. `Delete` removes the user from the org. |
 | `anthropic_external_key` | Full CRUD + validate for CMEK configurations. Polymorphic `provider_config` (aws/gcp/azure) modeled as a flat block with `type` discriminator. Delete fails if any workspace still references it. |
 
-### Data sources (17)
+### Data sources (18)
 
 Identity / membership: `anthropic_organization`, `anthropic_workspace`, `anthropic_workspaces`, `anthropic_workspace_member`, `anthropic_workspace_members`, `anthropic_organization_member`, `anthropic_organization_members`, `anthropic_invite`, `anthropic_invites`.
 
 Keys / CMEK: `anthropic_api_key`, `anthropic_api_keys`, `anthropic_external_key`, `anthropic_external_keys`.
 
-Operational: `anthropic_workspace_rate_limits` (overrides only; absence = inherit, not no-limit), `anthropic_usage_report` (messages), `anthropic_claude_code_usage_report`, `anthropic_cost_report`.
+Operational: `anthropic_organization_rate_limits` (org-level baseline), `anthropic_workspace_rate_limits` (workspace overrides — absence = inherit, not no-limit), `anthropic_usage_report` (messages), `anthropic_claude_code_usage_report`, `anthropic_cost_report`.
 
 The three reports + external_keys are the **headline differentiation** vs `terraform-mars/terraform-provider-anthropic`, which covers only workspaces, api_keys, workspace_members, and invites.
 
 ### Coverage vs Admin API docs
 
-We cover every endpoint group documented at https://platform.claude.com/docs/en/api/admin **except MCP Tunnels** — a beta surface that uses a different auth model (Bearer/WIF instead of `x-api-key`) and requires the `anthropic-beta: mcp-tunnels-2026-05-19` header. Adding it would require a second auth code path in `internal/anthropic.Client`. Deliberately out of scope for v0.1; track as a future addition if customers need it. Service Accounts and Audit Logs are NOT in the Admin API (confirmed via sitemap — the breadcrumb mention was misleading).
+We cover **every** endpoint group documented at https://platform.claude.com/docs/en/api/admin **except MCP Tunnels** — a beta surface (5 tunnel + 4 cert endpoints) that uses a different auth model (Bearer/WIF instead of `x-api-key`) and requires the `anthropic-beta: mcp-tunnels-2026-05-19` header. Adding it would require a second auth code path in `internal/anthropic.Client`. Deliberately out of scope for v0.1; track as a future addition if customers need it. Service Accounts and Audit Logs are NOT in the Admin API (confirmed via sitemap audit on 2026-06-10 — the breadcrumb mention was misleading).
 
 ## Competitive context
 

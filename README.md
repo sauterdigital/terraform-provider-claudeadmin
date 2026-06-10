@@ -5,7 +5,7 @@
 
 Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin). Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, and exposes usage / cost / Claude Code reports as data sources for FinOps pipelines.
 
-Covers **11 of the 12** documented Admin API endpoint groups — every group except MCP Tunnels (beta, uses a different auth model).
+Covers **every documented Admin API endpoint** except MCP Tunnels (beta, uses a different auth model).
 
 ## Why this provider
 
@@ -63,11 +63,11 @@ The admin key is distinct from regular Claude API keys — generate it in the An
 | `anthropic_organization_member` | Set org role for an existing user (joined via accepted invite). |
 | `anthropic_external_key` | CMEK config CRUD + validate, polymorphic across AWS / GCP / Azure. |
 
-**17 data sources**
+**18 data sources**
 
 - Identity & membership: `anthropic_organization`, `anthropic_workspace[s]`, `anthropic_workspace_member[s]`, `anthropic_organization_member[s]`, `anthropic_invite[s]`
 - Keys / CMEK: `anthropic_api_key[s]`, `anthropic_external_key[s]`
-- Operational: `anthropic_workspace_rate_limits`, `anthropic_usage_report`, `anthropic_claude_code_usage_report`, `anthropic_cost_report`
+- Operational: `anthropic_organization_rate_limits`, `anthropic_workspace_rate_limits`, `anthropic_usage_report`, `anthropic_claude_code_usage_report`, `anthropic_cost_report`
 
 Full schema reference: [`docs/`](./docs).
 

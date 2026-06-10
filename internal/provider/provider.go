@@ -100,6 +100,7 @@ func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.D
 		NewWorkspaceDataSource,
 		NewWorkspacesDataSource,
 		NewWorkspaceRateLimitsDataSource,
+		NewOrganizationRateLimitsDataSource,
 		NewAPIKeyDataSource,
 		NewAPIKeysDataSource,
 		NewWorkspaceMemberDataSource,

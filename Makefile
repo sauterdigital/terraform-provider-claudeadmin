@@ -1,6 +1,6 @@
 NAME      ?= anthropic
 NAMESPACE ?= sauterdigital
-VERSION   ?= 0.1.0
+VERSION   ?= 0.2.0
 HOSTNAME  ?= registry.terraform.io
 BINARY    := terraform-provider-$(NAME)
 OS_ARCH   := $(shell go env GOOS)_$(shell go env GOARCH)

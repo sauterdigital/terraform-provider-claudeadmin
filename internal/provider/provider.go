@@ -159,5 +159,6 @@ func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.D
 		NewTunnelDataSource,
 		NewTunnelsDataSource,
 		NewTunnelCertificatesDataSource,
+		NewTunnelTokenDataSource,
 	}
 }

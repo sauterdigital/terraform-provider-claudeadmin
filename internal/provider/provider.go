@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	envAdminAPIKey = "ANTHROPIC_ADMIN_API_KEY"
-	envOAuthToken  = "ANTHROPIC_OAUTH_TOKEN"
+	envAdminAPIKey      = "ANTHROPIC_ADMIN_API_KEY"
+	envOAuthToken       = "ANTHROPIC_OAUTH_TOKEN"
+	envComplianceAPIKey = "ANTHROPIC_COMPLIANCE_API_KEY"
 )
 
 type AnthropicProvider struct {
@@ -24,9 +25,10 @@ type AnthropicProvider struct {
 }
 
 type AnthropicProviderModel struct {
-	AdminAPIKey types.String `tfsdk:"admin_api_key"`
-	OAuthToken  types.String `tfsdk:"oauth_token"`
-	BaseURL     types.String `tfsdk:"base_url"`
+	AdminAPIKey      types.String `tfsdk:"admin_api_key"`
+	OAuthToken       types.String `tfsdk:"oauth_token"`
+	ComplianceAPIKey types.String `tfsdk:"compliance_api_key"`
+	BaseURL          types.String `tfsdk:"base_url"`
 }
 
 func New(version string) func() provider.Provider {
@@ -51,6 +53,11 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 			},
 			"oauth_token": schema.StringAttribute{
 				Description: "OAuth Bearer token (user OAuth or WIF-minted service account token). May also be set via ANTHROPIC_OAUTH_TOKEN. When set, Bearer auth is used for ALL requests (the API's modern preferred pattern). Required for endpoints that reject Admin API keys: Service Accounts (Create/Update/Archive), SA Workspace Members, Federation Issuers, Federation Rules, MCP Tunnels.",
+				Optional:    true,
+				Sensitive:   true,
+			},
+			"compliance_api_key": schema.StringAttribute{
+				Description: "Compliance API key (`sk-ant-api01-...`). May also be set via ANTHROPIC_COMPLIANCE_API_KEY. Used exclusively for `/v1/compliance/*` endpoints — those reject both Admin API keys and OAuth bearer tokens. Required to use any `anthropic_compliance_*` data source.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -93,9 +100,17 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		baseURL = data.BaseURL.ValueString()
 	}
 
+	complianceKey := os.Getenv(envComplianceAPIKey)
+	if !data.ComplianceAPIKey.IsNull() && !data.ComplianceAPIKey.IsUnknown() {
+		complianceKey = data.ComplianceAPIKey.ValueString()
+	}
+
 	client := anthropic.NewClient(baseURL, apiKey, p.version)
 	if oauthToken != "" {
 		client.SetOAuthToken(oauthToken)
+	}
+	if complianceKey != "" {
+		client.SetComplianceKey(complianceKey)
 	}
 	resp.DataSourceData = client
 	resp.ResourceData = client
@@ -117,6 +132,7 @@ func (p *AnthropicProvider) Resources(_ context.Context) []func() resource.Resou
 		NewFederationRuleResource,
 		NewFederationRuleWorkspaceResource,
 		NewTunnelCertificateResource,
+		NewTunnelTokenRotationResource,
 	}
 }
 
@@ -160,5 +176,12 @@ func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.D
 		NewTunnelsDataSource,
 		NewTunnelCertificatesDataSource,
 		NewTunnelTokenDataSource,
+		NewComplianceActivitiesDataSource,
+		NewComplianceOrganizationsDataSource,
+		NewComplianceOrganizationUsersDataSource,
+		NewComplianceOrganizationRolesDataSource,
+		NewComplianceGroupsDataSource,
+		NewComplianceGroupMembersDataSource,
+		NewComplianceOrganizationSettingsDataSource,
 	}
 }

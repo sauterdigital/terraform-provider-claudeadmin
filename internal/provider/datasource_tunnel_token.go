@@ -31,7 +31,7 @@ func (d *TunnelTokenDataSource) Metadata(_ context.Context, req datasource.Metad
 
 func (d *TunnelTokenDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Reveals the current connection token for an MCP tunnel. **Sensitive** — `tunnel_token` is the actual secret that MCP servers use to connect. Pipe it into a Kubernetes Secret, Vault, or similar via output. To rotate the token, call `POST /v1/organizations/tunnels/{id}/rotate_token` out-of-band (not exposed as Terraform — rotation is a one-shot operation that doesn't fit declarative state). Beta — requires OAuth Bearer auth.",
+		Description: "Reveals the current connection token for an MCP tunnel. **Sensitive** — `tunnel_token` is the actual secret that MCP servers use to connect. Pipe it into a Kubernetes Secret, Vault, or similar via output. To rotate the token declaratively, use the `anthropic_tunnel_token_rotation` resource (change its `rotation_id` to trigger). Beta — requires OAuth Bearer auth.",
 		Attributes: map[string]schema.Attribute{
 			"tunnel_id":    schema.StringAttribute{Required: true},
 			"id":           schema.StringAttribute{Computed: true, Description: "Stable identifier for the current token value. Changes only on rotation."},

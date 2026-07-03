@@ -20,7 +20,7 @@ The Admin API requires an **admin API key** (`x-api-key`) distinct from regular 
 
 Feature-complete v0.1: full Admin API surface, validators on every enum, retry/backoff for 429, generated docs, unit tests, acceptance test scaffolding, and CI. `go build ./... && go vet ./... && gofmt -l . && go test -race ./...` all green; `terraform fmt -check -recursive examples/` clean. Not yet validated against the live Admin API — acceptance tests require `TF_ACC=1` + `ANTHROPIC_ADMIN_API_KEY` and have not been executed.
 
-### Resources (14)
+### Resources (15)
 
 Admin API key compatible:
 
@@ -44,9 +44,10 @@ Admin API key compatible:
 | `anthropic_federation_issuer` | OIDC issuer. Polymorphic JWKS source (discovery / explicit_url / inline). |
 | `anthropic_federation_rule` | Binds OIDC claims to a service account. Match supports audience, claims map, CEL condition, subject_prefix. |
 | `anthropic_federation_rule_workspace` | Extends a rule to an additional workspace. Composite id. |
-| `anthropic_tunnel_certificate` | MCP tunnel CA cert (beta, `anthropic-beta: mcp-tunnels-2026-05-19` added automatically). |
+| `anthropic_tunnel_certificate` | MCP tunnel CA cert (beta, `anthropic-beta: mcp-tunnels-2026-06-22` added automatically). Uses `/v1/tunnels` (public API). |
+| `anthropic_tunnel_token_rotation` | Declarative token rotation. Change `rotation_id` to trigger a new rotation; fresh `tunnel_token` becomes the sensitive output. |
 
-### Data sources (37)
+### Data sources (44)
 
 Identity & membership: `anthropic_organization`, `anthropic_workspace[s]`, `anthropic_workspace_member[s]`, `anthropic_organization_member[s]`, `anthropic_invite[s]`.
 
@@ -62,13 +63,15 @@ Analytics v2 (Enterprise + `read:analytics` scope): `anthropic_activity_summarie
 
 Service accounts (Bearer auth): `anthropic_service_account[s]`, `anthropic_service_account_workspaces`, `anthropic_workspace_service_accounts`.
 
-MCP Tunnels (Bearer + beta): `anthropic_tunnel[s]`, `anthropic_tunnel_certificates`.
+MCP Tunnels (Bearer + beta): `anthropic_tunnel[s]`, `anthropic_tunnel_certificates`, `anthropic_tunnel_token`.
+
+Compliance API (dedicated `compliance_api_key`, Enterprise): `anthropic_compliance_activities`, `anthropic_compliance_organizations`, `anthropic_compliance_organization_users`, `anthropic_compliance_organization_roles`, `anthropic_compliance_groups`, `anthropic_compliance_group_members`, `anthropic_compliance_organization_settings`.
 
 The FinOps reports + analytics v2 + CMEK + spend limits + service accounts + federation are the **headline differentiation** vs `terraform-mars/terraform-provider-anthropic`, which covers only workspaces, api_keys, workspace_members, and invites.
 
 ### Coverage vs Admin API docs
 
-We cover **every** endpoint group documented at https://platform.claude.com/docs/en/api/admin. The client supports both auth modes (x-api-key + Bearer); endpoints that reject Admin API keys (Service Accounts, Federation, MCP Tunnels) check `Client.HasOAuth()` upfront and return `ErrOAuthRequired` instead of letting the API return 401. MCP Tunnels endpoints automatically attach the `anthropic-beta: mcp-tunnels-2026-05-19` header via `WithBetaHeaders`. Audit Logs are NOT in the Admin API (confirmed via doc audit on 2026-06-10).
+We cover **every** endpoint group documented at https://platform.claude.com/docs/en/api/admin, plus Compliance API (`/v1/compliance/*`) as of v0.3.0. The client supports three auth modes (x-api-key admin, Bearer OAuth, x-api-key compliance); endpoints that reject Admin API keys (Service Accounts, Federation, MCP Tunnels) check `Client.HasOAuth()` upfront and return `ErrOAuthRequired`. Compliance endpoints check `Client.HasCompliance()` and return `ErrComplianceRequired`. MCP Tunnels endpoints automatically attach the `anthropic-beta: mcp-tunnels-2026-06-22` header via `WithBetaHeaders`. Audit Logs are NOT in the Admin API (confirmed via doc audit on 2026-06-10).
 
 Doc-noted limitations we accept:
 - `anthropic_spend_limit` only accepts `scope.type=user` for writes; seat-tier / rbac_group / organization-service / organization-level limits remain Console-only.

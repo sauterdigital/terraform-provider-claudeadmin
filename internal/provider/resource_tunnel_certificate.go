@@ -41,7 +41,7 @@ func (r *TunnelCertificateResource) Metadata(_ context.Context, req resource.Met
 
 func (r *TunnelCertificateResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Registers a public CA certificate for an MCP tunnel. **Requires OAuth Bearer auth + beta header `anthropic-beta: mcp-tunnels-2026-05-19` (added automatically).** PEM must contain exactly one X.509 cert with no private-key material. A tunnel holds at most two non-archived certificates. **Deprecated upstream** — Anthropic is migrating to `/v1/tunnels` on the public API. Composite import id: `<tunnel_id>:<cert_id>`.",
+		Description: "Registers a public CA certificate for an MCP tunnel. **Requires OAuth Bearer auth + beta header `anthropic-beta: mcp-tunnels-2026-06-22` (added automatically).** PEM must contain exactly one X.509 cert with no private-key material. A tunnel holds at most two non-archived certificates. Composite import id: `<tunnel_id>:<cert_id>`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:      true,

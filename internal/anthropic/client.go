@@ -26,11 +26,12 @@ const (
 )
 
 type Client struct {
-	baseURL    string
-	apiKey     string // x-api-key auth
-	oauthToken string // Bearer auth (preferred for newer endpoints; some require it)
-	userAgent  string
-	httpClient *http.Client
+	baseURL       string
+	apiKey        string // x-api-key auth (Admin API key sk-ant-admin01-...)
+	oauthToken    string // Bearer auth (preferred for newer endpoints; some require it)
+	complianceKey string // x-api-key auth for Compliance API (sk-ant-api01-...)
+	userAgent     string
+	httpClient    *http.Client
 
 	// sleeper exists so tests can swap in a fake clock without waiting real
 	// seconds during retry exercises. nil means use time.Sleep.
@@ -62,6 +63,28 @@ func (c *Client) SetOAuthToken(token string) {
 // endpoints that REQUIRE Bearer auth to fail-fast at the provider layer with
 // a clear message instead of letting the API return a 401.
 func (c *Client) HasOAuth() bool { return c.oauthToken != "" }
+
+// SetComplianceKey enables Compliance API auth on the client. Compliance
+// endpoints (/v1/compliance/*) accept only their dedicated key
+// (sk-ant-api01-...), passed in the same x-api-key header as Admin API keys
+// but with a distinct format. Pass an empty string to clear.
+func (c *Client) SetComplianceKey(key string) { c.complianceKey = key }
+
+// HasCompliance reports whether the client has a Compliance API key
+// configured. Compliance data sources fail-fast when this is false rather
+// than relying on the API's 401.
+func (c *Client) HasCompliance() bool { return c.complianceKey != "" }
+
+// complianceAuthKey is the context marker requesting compliance-key auth
+// on the outgoing request.
+type complianceAuthKey struct{}
+
+// WithComplianceAuth returns a child context that forces the outgoing
+// request to use the Compliance API key instead of the Admin key / OAuth
+// token. Used by /v1/compliance/* endpoints.
+func WithComplianceAuth(ctx context.Context) context.Context {
+	return context.WithValue(ctx, complianceAuthKey{}, true)
+}
 
 type APIError struct {
 	StatusCode int
@@ -123,7 +146,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		if err != nil {
 			return fmt.Errorf("build request: %w", err)
 		}
-		c.setAuthHeaders(req)
+		c.setAuthHeaders(req, ctx)
 		req.Header.Set("anthropic-version", apiVersionHeader)
 		req.Header.Set("content-type", "application/json")
 		req.Header.Set("user-agent", c.userAgent)
@@ -190,8 +213,14 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 
 // setAuthHeaders prefers Bearer when both are present — that's the doc's
 // modern preferred pattern, and several newer endpoints (Service Accounts,
-// Federation, MCP Tunnels) reject x-api-key outright.
-func (c *Client) setAuthHeaders(req *http.Request) {
+// Federation, MCP Tunnels) reject x-api-key outright. Compliance API
+// endpoints override via WithComplianceAuth(ctx) — they REQUIRE the
+// compliance key in x-api-key and reject Admin / OAuth auth.
+func (c *Client) setAuthHeaders(req *http.Request, ctx context.Context) {
+	if v, ok := ctx.Value(complianceAuthKey{}).(bool); ok && v && c.complianceKey != "" {
+		req.Header.Set("x-api-key", c.complianceKey)
+		return
+	}
 	if c.oauthToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.oauthToken)
 		return
@@ -226,3 +255,7 @@ func retryAfterFromResponse(resp *http.Response, attempt int) time.Duration {
 // client only has an Admin API key. Wrapped at resource layer with a clear
 // remediation message.
 var ErrOAuthRequired = errors.New("this endpoint requires OAuth bearer auth (set provider attribute oauth_token or env ANTHROPIC_OAUTH_TOKEN)")
+
+// ErrComplianceRequired signals that an endpoint requires a Compliance API
+// key. Wrapped at data source layer with a clear remediation message.
+var ErrComplianceRequired = errors.New("this endpoint requires a Compliance API key (set provider attribute compliance_api_key or env ANTHROPIC_COMPLIANCE_API_KEY)")

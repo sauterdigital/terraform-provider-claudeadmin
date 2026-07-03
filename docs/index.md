@@ -33,4 +33,5 @@ provider "anthropic" {
 
 - `admin_api_key` (String, Sensitive) Anthropic Admin API key (`sk-ant-admin-...`). May also be set via the ANTHROPIC_ADMIN_API_KEY environment variable. Used as `x-api-key` header.
 - `base_url` (String) Override the API base URL. Defaults to https://api.anthropic.com.
+- `compliance_api_key` (String, Sensitive) Compliance API key (`sk-ant-api01-...`). May also be set via ANTHROPIC_COMPLIANCE_API_KEY. Used exclusively for `/v1/compliance/*` endpoints — those reject both Admin API keys and OAuth bearer tokens. Required to use any `anthropic_compliance_*` data source.
 - `oauth_token` (String, Sensitive) OAuth Bearer token (user OAuth or WIF-minted service account token). May also be set via ANTHROPIC_OAUTH_TOKEN. When set, Bearer auth is used for ALL requests (the API's modern preferred pattern). Required for endpoints that reject Admin API keys: Service Accounts (Create/Update/Archive), SA Workspace Members, Federation Issuers, Federation Rules, MCP Tunnels.

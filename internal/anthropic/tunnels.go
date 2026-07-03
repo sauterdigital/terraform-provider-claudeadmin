@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const tunnelsBeta = "mcp-tunnels-2026-05-19"
+const tunnelsBeta = "mcp-tunnels-2026-06-22"
 
 // All MCP Tunnel endpoints REQUIRE OAuth Bearer + the beta header.
 // We attach the beta header automatically via WithBetaHeaders.
@@ -69,7 +69,7 @@ func (c *Client) GetTunnel(ctx context.Context, id string) (*Tunnel, error) {
 		return nil, ErrOAuthRequired
 	}
 	var out Tunnel
-	if err := c.do(tunnelsCtx(ctx), http.MethodGet, "/v1/organizations/tunnels/"+url.PathEscape(id), nil, &out); err != nil {
+	if err := c.do(tunnelsCtx(ctx), http.MethodGet, "/v1/tunnels/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -92,7 +92,7 @@ func (c *Client) ListTunnels(ctx context.Context, p ListTunnelsParams) ([]Tunnel
 		if p.WorkspaceID != "" {
 			q.Set("workspace_id", p.WorkspaceID)
 		}
-		path := "/v1/organizations/tunnels"
+		path := "/v1/tunnels"
 		if encoded := q.Encode(); encoded != "" {
 			path += "?" + encoded
 		}
@@ -113,7 +113,7 @@ func (c *Client) RevealTunnelToken(ctx context.Context, id string) (*TunnelToken
 		return nil, ErrOAuthRequired
 	}
 	var out TunnelToken
-	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/organizations/tunnels/"+url.PathEscape(id)+"/reveal_token", nil, &out); err != nil {
+	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/tunnels/"+url.PathEscape(id)+"/reveal_token", nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -125,7 +125,7 @@ func (c *Client) RotateTunnelToken(ctx context.Context, id, reason string) (*Tun
 	}
 	var out TunnelToken
 	body := RotateTunnelTokenRequest{Reason: reason}
-	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/organizations/tunnels/"+url.PathEscape(id)+"/rotate_token", body, &out); err != nil {
+	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/tunnels/"+url.PathEscape(id)+"/rotate_token", body, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -136,7 +136,7 @@ func (c *Client) ArchiveTunnel(ctx context.Context, id string) (*Tunnel, error) 
 		return nil, ErrOAuthRequired
 	}
 	var out Tunnel
-	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/organizations/tunnels/"+url.PathEscape(id)+"/archive", nil, &out); err != nil {
+	if err := c.do(tunnelsCtx(ctx), http.MethodPost, "/v1/tunnels/"+url.PathEscape(id)+"/archive", nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -149,7 +149,7 @@ func (c *Client) CreateTunnelCertificate(ctx context.Context, tunnelID, caCertPE
 		return nil, ErrOAuthRequired
 	}
 	var out TunnelCertificate
-	path := "/v1/organizations/tunnels/" + url.PathEscape(tunnelID) + "/certificates"
+	path := "/v1/tunnels/" + url.PathEscape(tunnelID) + "/certificates"
 	if err := c.do(tunnelsCtx(ctx), http.MethodPost, path, CreateTunnelCertRequest{CACertificatePEM: caCertPEM}, &out); err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (c *Client) GetTunnelCertificate(ctx context.Context, tunnelID, certID stri
 		return nil, ErrOAuthRequired
 	}
 	var out TunnelCertificate
-	path := "/v1/organizations/tunnels/" + url.PathEscape(tunnelID) + "/certificates/" + url.PathEscape(certID)
+	path := "/v1/tunnels/" + url.PathEscape(tunnelID) + "/certificates/" + url.PathEscape(certID)
 	if err := c.do(tunnelsCtx(ctx), http.MethodGet, path, nil, &out); err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (c *Client) ListTunnelCertificates(ctx context.Context, tunnelID string, in
 		if includeArchived {
 			q.Set("include_archived", "true")
 		}
-		path := "/v1/organizations/tunnels/" + url.PathEscape(tunnelID) + "/certificates"
+		path := "/v1/tunnels/" + url.PathEscape(tunnelID) + "/certificates"
 		if encoded := q.Encode(); encoded != "" {
 			path += "?" + encoded
 		}
@@ -203,7 +203,7 @@ func (c *Client) ArchiveTunnelCertificate(ctx context.Context, tunnelID, certID 
 		return nil, ErrOAuthRequired
 	}
 	var out TunnelCertificate
-	path := "/v1/organizations/tunnels/" + url.PathEscape(tunnelID) + "/certificates/" + url.PathEscape(certID) + "/archive"
+	path := "/v1/tunnels/" + url.PathEscape(tunnelID) + "/certificates/" + url.PathEscape(certID) + "/archive"
 	if err := c.do(tunnelsCtx(ctx), http.MethodPost, path, nil, &out); err != nil {
 		return nil, err
 	}

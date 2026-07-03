@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/sauterdigital/terraform-provider-anthropic/internal/anthropic"
+	"github.com/sauterdigital/terraform-provider-claude-admin/internal/anthropic"
 )
 
 // ============================================================

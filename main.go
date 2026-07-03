@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/sauterdigital/terraform-provider-anthropic/internal/provider"
+	"github.com/sauterdigital/terraform-provider-claude-admin/internal/provider"
 )
 
 var version = "dev"
@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 
 	err := providerserver.Serve(context.Background(), provider.New(version), providerserver.ServeOpts{
-		Address: "registry.terraform.io/sauterdigital/anthropic",
+		Address: "registry.terraform.io/sauterdigital/claude-admin",
 		Debug:   debug,
 	})
 	if err != nil {

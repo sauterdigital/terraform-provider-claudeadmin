@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/sauterdigital/terraform-provider-anthropic/internal/anthropic"
+	"github.com/sauterdigital/terraform-provider-claude-admin/internal/anthropic"
 )
 
 // clientFromProviderData unwraps the provider's shared client. Resources and

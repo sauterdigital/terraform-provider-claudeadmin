@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/sauterdigital/terraform-provider-anthropic/internal/anthropic"
+	"github.com/sauterdigital/terraform-provider-claude-admin/internal/anthropic"
 )
 
 const (

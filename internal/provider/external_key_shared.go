@@ -3,7 +3,7 @@ package provider
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/sauterdigital/terraform-provider-anthropic/internal/anthropic"
+	"github.com/sauterdigital/terraform-provider-claude-admin/internal/anthropic"
 )
 
 type ExternalKeyModel struct {

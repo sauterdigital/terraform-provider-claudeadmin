@@ -1,4 +1,4 @@
-module github.com/sauterdigital/terraform-provider-anthropic
+module github.com/sauterdigital/terraform-provider-claude-admin
 
 go 1.25.8
 

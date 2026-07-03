@@ -47,7 +47,7 @@ func NewClient(baseURL, apiKey, version string) *Client {
 	return &Client{
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		apiKey:     apiKey,
-		userAgent:  fmt.Sprintf("terraform-provider-anthropic/%s", version),
+		userAgent:  fmt.Sprintf("terraform-provider-claude-admin/%s", version),
 		httpClient: &http.Client{Timeout: defaultTimeout},
 	}
 }

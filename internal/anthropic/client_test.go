@@ -34,7 +34,7 @@ func TestClient_HeadersAndBaseURLTrim(t *testing.T) {
 	if got := captured.Header.Get("anthropic-version"); got != "2023-06-01" {
 		t.Errorf("anthropic-version: got %q", got)
 	}
-	if got := captured.Header.Get("user-agent"); !strings.HasPrefix(got, "terraform-provider-anthropic/") {
+	if got := captured.Header.Get("user-agent"); !strings.HasPrefix(got, "terraform-provider-claude-admin/") {
 		t.Errorf("user-agent: got %q", got)
 	}
 	if got := captured.URL.Path; got != "/v1/organizations/workspaces/wrkspc_test" {

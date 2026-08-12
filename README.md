@@ -5,9 +5,11 @@
 
 > **Unofficial, community-maintained** Terraform provider for the Anthropic Admin API. Not affiliated with, endorsed by, sponsored by, or supported by Anthropic PBC. "Anthropic", "Claude", and related marks are trademarks of Anthropic PBC and are used here solely to identify compatibility (nominative fair use). For official products and support, see [anthropic.com](https://www.anthropic.com).
 
-Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin). Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, service accounts (OAuth Bearer), federation issuers + rules (workload identity federation), spend limits, MCP tunnel certificates + declarative token rotation (beta), Compliance API data (activity feed, orgs, users, roles, SCIM groups, org security settings), and exposes the full analytics surface (token usage, cost, Claude Code, Skills, Connectors, Chat Projects, per-user breakdowns) as data sources for FinOps pipelines.
+Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin), scoped to **Claude Console (Claude Platform)** organizations. Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, service accounts (OAuth Bearer), federation issuers + rules (workload identity federation), MCP tunnel certificates + declarative token rotation (beta), Compliance API data (activity feed, orgs, users, roles, SCIM groups, org security settings), and exposes the full analytics surface (token usage, cost, Claude Code, Skills, Connectors, Chat Projects, per-user breakdowns) as data sources for FinOps pipelines.
 
-Covers **every documented Admin API endpoint** plus Compliance API: 15 resources + 44 data sources spanning ~90 endpoints.
+Covers **every documented Console Admin API endpoint** plus Compliance API: 13 resources + 41 data sources spanning ~80 endpoints.
+
+> **Breaking change (2026-08-12):** Spend Limits (`claudeadmin_spend_limit`, `claudeadmin_spend_limit_increase_decision`, `claudeadmin_effective_spend_limits`, `claudeadmin_spend_limit_increase_request[s]`) moved to the sibling [`sauterdigital/claudeenterprise`](https://github.com/sauterdigital/terraform-provider-claudeenterprise) provider — Spend Limits is a Claude-Enterprise-only surface and never belonged here. Same schemas, different provider: `terraform state rm` + re-`import` under the new source if you have existing state. Analytics v2 and the Compliance APIs have the same latent mis-scoping and are tracked to move next, not yet done.
 
 ## Quick start
 
@@ -47,7 +49,7 @@ The Admin API key is distinct from regular Claude API keys — generate it in th
 
 ## What's included
 
-**15 resources**
+**13 resources**
 
 Authenticated with `admin_api_key` (x-api-key):
 
@@ -59,8 +61,6 @@ Authenticated with `admin_api_key` (x-api-key):
 | `claudeadmin_invite` | Immutable after create — changes to email/role force replacement. |
 | `claudeadmin_organization_member` | Set org role for an existing user (joined via accepted invite). |
 | `claudeadmin_external_key` | CMEK config CRUD + validate, polymorphic across AWS / GCP / Azure. |
-| `claudeadmin_spend_limit` | Per-user spend limit override (org/group/seat-tier limits stay in Console). |
-| `claudeadmin_spend_limit_increase_decision` | Approve or deny a user's request to raise their cap. |
 
 Require `oauth_token` (Bearer auth) — Admin API keys are rejected:
 
@@ -74,13 +74,12 @@ Require `oauth_token` (Bearer auth) — Admin API keys are rejected:
 | `claudeadmin_tunnel_certificate` | MCP tunnel CA certificate (beta, `mcp-tunnels-2026-06-22` header added automatically). |
 | `claudeadmin_tunnel_token_rotation` | Declarative MCP tunnel token rotation. Change `rotation_id` to trigger a new rotation; fresh token becomes a sensitive state attribute. |
 
-**44 data sources**
+**41 data sources**
 
 - Identity & membership: `claudeadmin_organization`, `claudeadmin_workspace[s]`, `claudeadmin_workspace_member[s]`, `claudeadmin_organization_member[s]`, `claudeadmin_invite[s]`
 - Keys / CMEK: `claudeadmin_api_key[s]`, `claudeadmin_external_key[s]`
 - Operational: `claudeadmin_organization_rate_limits`, `claudeadmin_workspace_rate_limits`
 - FinOps reports (legacy v1): `claudeadmin_usage_report`, `claudeadmin_claude_code_usage_report`, `claudeadmin_cost_report`
-- FinOps automation: `claudeadmin_effective_spend_limits`, `claudeadmin_spend_limit_increase_request[s]`
 - Analytics v2 (Enterprise + `read:analytics` scope): `claudeadmin_activity_summaries`, `claudeadmin_token_usage_over_time`, `claudeadmin_per_user_token_usage`, `claudeadmin_cost_over_time`, `claudeadmin_per_user_cost`, `claudeadmin_user_activity`, `claudeadmin_skills_usage`, `claudeadmin_connectors_usage`, `claudeadmin_chat_projects_usage`
 - Service accounts (Bearer): `claudeadmin_service_account[s]`, `claudeadmin_service_account_workspaces`, `claudeadmin_workspace_service_accounts`
 - MCP Tunnels (Bearer + beta): `claudeadmin_tunnel[s]`, `claudeadmin_tunnel_certificates`, `claudeadmin_tunnel_token`

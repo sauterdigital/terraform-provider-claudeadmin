@@ -5,11 +5,15 @@
 
 > **Unofficial, community-maintained** Terraform provider for the Anthropic Admin API. Not affiliated with, endorsed by, sponsored by, or supported by Anthropic PBC. "Anthropic", "Claude", and related marks are trademarks of Anthropic PBC and are used here solely to identify compatibility (nominative fair use). For official products and support, see [anthropic.com](https://www.anthropic.com).
 
-Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin), scoped to **Claude Console (Claude Platform)** organizations. Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, service accounts (OAuth Bearer), federation issuers + rules (workload identity federation), MCP tunnel certificates + declarative token rotation (beta), Compliance API data (activity feed, orgs, users, roles, SCIM groups, org security settings), and exposes the full analytics surface (token usage, cost, Claude Code, Skills, Connectors, Chat Projects, per-user breakdowns) as data sources for FinOps pipelines.
+Terraform provider for the [Anthropic Admin API](https://platform.claude.com/docs/en/api/admin), scoped to **Claude Console (Claude Platform)** organizations. Manages workspaces, API keys, organization and workspace members, invites, CMEK external keys, service accounts (OAuth Bearer), federation issuers + rules (workload identity federation), and MCP tunnel certificates + declarative token rotation (beta).
 
-Covers **every documented Console Admin API endpoint** plus Compliance API: 13 resources + 41 data sources spanning ~80 endpoints.
+Covers **every documented Console Admin API endpoint** that fits a declarative resource model: 13 resources + 26 data sources.
 
-> **Breaking change (2026-08-12):** Spend Limits (`claudeadmin_spend_limit`, `claudeadmin_spend_limit_increase_decision`, `claudeadmin_effective_spend_limits`, `claudeadmin_spend_limit_increase_request[s]`) moved to the sibling [`sauterdigital/claudeenterprise`](https://github.com/sauterdigital/terraform-provider-claudeenterprise) provider — Spend Limits is a Claude-Enterprise-only surface and never belonged here. Same schemas, different provider: `terraform state rm` + re-`import` under the new source if you have existing state. Analytics v2 and the Compliance APIs have the same latent mis-scoping and are tracked to move next, not yet done.
+> **Breaking changes (2026-08-12):**
+> - Spend Limits (`claudeadmin_spend_limit`, `claudeadmin_spend_limit_increase_decision`, `claudeadmin_effective_spend_limits`, `claudeadmin_spend_limit_increase_request[s]`) moved to the sibling [`sauterdigital/claudeenterprise`](https://github.com/sauterdigital/terraform-provider-claudeenterprise) provider — it's a Claude-Enterprise-only surface and never belonged here.
+> - **Analytics v2 and the Compliance / Compliance Content APIs were removed outright, not moved.** Both are Claude-Enterprise-only, and — on reflection — neither fits a Terraform resource model well: they're pure reporting/audit reads with no desired-state to converge on, better served by a script or BI pipeline calling [the Analytics API](https://platform.claude.com/docs/en/manage-claude/analytics-api) / [the Compliance API](https://platform.claude.com/docs/en/manage-claude/compliance-api) directly. See "Out of scope" below.
+>
+> Same schemas for the Spend Limits move: `terraform state rm` + re-`import` under the new provider source. For Analytics/Compliance there's no replacement resource — remove them from your config and call the APIs directly.
 
 ## Quick start
 
@@ -24,9 +28,8 @@ terraform {
 }
 
 provider "anthropic" {
-  # admin_api_key      = "sk-ant-admin-..."   # or ANTHROPIC_ADMIN_API_KEY
-  # oauth_token        = "..."                # or ANTHROPIC_OAUTH_TOKEN (Service Accounts, Federation, MCP Tunnels)
-  # compliance_api_key = "sk-ant-api01-..."   # or ANTHROPIC_COMPLIANCE_API_KEY (Compliance data sources)
+  # admin_api_key = "sk-ant-admin-..."   # or ANTHROPIC_ADMIN_API_KEY
+  # oauth_token   = "..."                # or ANTHROPIC_OAUTH_TOKEN (Service Accounts, Federation, MCP Tunnels)
 }
 
 resource "claudeadmin_workspace" "platform" {
@@ -45,7 +48,7 @@ data "claudeadmin_cost_report" "monthly" {
 }
 ```
 
-The Admin API key is distinct from regular Claude API keys — generate it in the Anthropic Console under organization settings. The Compliance API key (Enterprise) is issued separately for `/v1/compliance/*` endpoints.
+The Admin API key is distinct from regular Claude API keys — generate it in the Anthropic Console under organization settings.
 
 ## What's included
 
@@ -74,29 +77,31 @@ Require `oauth_token` (Bearer auth) — Admin API keys are rejected:
 | `claudeadmin_tunnel_certificate` | MCP tunnel CA certificate (beta, `mcp-tunnels-2026-06-22` header added automatically). |
 | `claudeadmin_tunnel_token_rotation` | Declarative MCP tunnel token rotation. Change `rotation_id` to trigger a new rotation; fresh token becomes a sensitive state attribute. |
 
-**41 data sources**
+**26 data sources**
 
 - Identity & membership: `claudeadmin_organization`, `claudeadmin_workspace[s]`, `claudeadmin_workspace_member[s]`, `claudeadmin_organization_member[s]`, `claudeadmin_invite[s]`
 - Keys / CMEK: `claudeadmin_api_key[s]`, `claudeadmin_external_key[s]`
 - Operational: `claudeadmin_organization_rate_limits`, `claudeadmin_workspace_rate_limits`
-- FinOps reports (legacy v1): `claudeadmin_usage_report`, `claudeadmin_claude_code_usage_report`, `claudeadmin_cost_report`
-- Analytics v2 (Enterprise + `read:analytics` scope): `claudeadmin_activity_summaries`, `claudeadmin_token_usage_over_time`, `claudeadmin_per_user_token_usage`, `claudeadmin_cost_over_time`, `claudeadmin_per_user_cost`, `claudeadmin_user_activity`, `claudeadmin_skills_usage`, `claudeadmin_connectors_usage`, `claudeadmin_chat_projects_usage`
+- FinOps reports (legacy v1, Console-available): `claudeadmin_usage_report`, `claudeadmin_claude_code_usage_report`, `claudeadmin_cost_report`
 - Service accounts (Bearer): `claudeadmin_service_account[s]`, `claudeadmin_service_account_workspaces`, `claudeadmin_workspace_service_accounts`
 - MCP Tunnels (Bearer + beta): `claudeadmin_tunnel[s]`, `claudeadmin_tunnel_certificates`, `claudeadmin_tunnel_token`
-- Compliance API (dedicated `compliance_api_key`, Enterprise): `claudeadmin_compliance_activities`, `claudeadmin_compliance_organizations`, `claudeadmin_compliance_organization_users`, `claudeadmin_compliance_organization_roles`, `claudeadmin_compliance_groups`, `claudeadmin_compliance_group_members`, `claudeadmin_compliance_organization_settings`
 
 Full schema reference: [`docs/`](./docs).
+
+## Out of scope, deliberately
+
+- **Claude Enterprise (claude.ai) members with the `managed` role, RBAC groups, custom roles, and Spend Limits** — use [`sauterdigital/claudeenterprise`](https://github.com/sauterdigital/terraform-provider-claudeenterprise). A key from this provider's organization type cannot manage that one.
+- **Analytics v2** (per-user/time-bucketed usage, cost, adoption) and **the Compliance / Compliance Content APIs** (audit activity feed, eDiscovery/DLP content export and deletion) are Claude-Enterprise-only, read/report-oriented surfaces with no meaningful desired-state to converge on — they don't fit a Terraform resource model, `.tf` files aren't the natural place to schedule a report or run an eDiscovery export. Call them directly: [Analytics API](https://platform.claude.com/docs/en/manage-claude/analytics-api), [Compliance API](https://platform.claude.com/docs/en/manage-claude/compliance-api). Both were implemented here through v0.5.0 and removed in 0.6.0 — this is a deliberate scope narrowing, not an oversight.
 
 ## Configuration
 
 | Argument | Env var | Description |
 |---|---|---|
 | `admin_api_key` | `ANTHROPIC_ADMIN_API_KEY` | Admin API key (`sk-ant-admin-...`). Used as `x-api-key` header. Required for most endpoints. |
-| `oauth_token` | `ANTHROPIC_OAUTH_TOKEN` | OAuth Bearer token (user OAuth or WIF-minted SA token). **Required** for Service Accounts, Federation, and MCP Tunnels (which reject Admin API keys). When set, Bearer auth is used for ALL non-Compliance requests. |
-| `compliance_api_key` | `ANTHROPIC_COMPLIANCE_API_KEY` | Compliance API key (`sk-ant-api01-...`). Used exclusively for `/v1/compliance/*` endpoints — those reject both Admin API keys and OAuth bearer tokens. Required to use any `claudeadmin_compliance_*` data source. |
+| `oauth_token` | `ANTHROPIC_OAUTH_TOKEN` | OAuth Bearer token (user OAuth or WIF-minted SA token). **Required** for Service Accounts, Federation, and MCP Tunnels (which reject Admin API keys). When set, Bearer auth is used for ALL requests. |
 | `base_url` | — | Optional. Defaults to `https://api.anthropic.com`. Override for staging or mock servers. |
 
-At least one of `admin_api_key` or `oauth_token` must be set. When both are configured the client uses Bearer (the API's modern preferred pattern). Compliance calls always use `compliance_api_key`. Every request sets `anthropic-version: 2023-06-01` and a provider-versioned `User-Agent`. HTTP 429 responses are retried with exponential backoff (capped at 30s), honoring `Retry-After` when present.
+At least one of `admin_api_key` or `oauth_token` must be set. When both are configured the client uses Bearer (the API's modern preferred pattern). Every request sets `anthropic-version: 2023-06-01` and a provider-versioned `User-Agent`. HTTP 429 responses are retried with exponential backoff (capped at 30s), honoring `Retry-After` when present.
 
 ## Development
 

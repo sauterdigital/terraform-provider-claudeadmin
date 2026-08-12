@@ -20,20 +20,25 @@ The Admin API requires an **admin API key** (`x-api-key`) distinct from regular 
 
 Feature-complete v0.1: full Admin API surface, validators on every enum, retry/backoff for 429, generated docs, unit tests, acceptance test scaffolding, and CI. `go build ./... && go vet ./... && gofmt -l . && go test -race ./...` all green; `terraform fmt -check -recursive examples/` clean. Not yet validated against the live Admin API — acceptance tests require `TF_ACC=1` + `ANTHROPIC_ADMIN_API_KEY` and have not been executed.
 
-> **BREAKING (2026-08-12): Spend Limits moved to `sauterdigital/claudeenterprise`.**
-> `claudeadmin_spend_limit`, `claudeadmin_spend_limit_increase_decision`,
-> `claudeadmin_effective_spend_limits`, `claudeadmin_spend_limit_increase_request[s]` are **removed
-> from this provider**. Spend Limits is a Claude-Enterprise-only surface (per the [Admin API user
-> management docs](https://platform.claude.com/docs/en/manage-claude/user-management#which-endpoints-can-your-organization-use));
-> it never belonged in the Console provider, and was moved to the sibling `claudeenterprise`
-> provider (built for exactly this org type) rather than removed outright. If you have state using
-> these resources: `terraform state rm` them here, add the `claudeenterprise` provider, and
-> `terraform import` the same IDs into the equivalent `claudeenterprise_*` resources — the schemas
-> are unchanged, only the provider/source address differs. Analytics v2 and the Compliance
-> APIs are also Claude-Enterprise-only and have the **same latent mis-scoping** — not yet moved,
-> tracked as an open TODO below, not silently accepted as correct.
+> **BREAKING (2026-08-12), two changes:**
+> 1. **Spend Limits moved to `sauterdigital/claudeenterprise`.** `claudeadmin_spend_limit`,
+>    `claudeadmin_spend_limit_increase_decision`, `claudeadmin_effective_spend_limits`,
+>    `claudeadmin_spend_limit_increase_request[s]` are removed from this provider — Spend Limits is
+>    Claude-Enterprise-only (per the [Admin API user management docs](https://platform.claude.com/docs/en/manage-claude/user-management#which-endpoints-can-your-organization-use))
+>    and never belonged in the Console provider. Schemas are unchanged in the new home: `terraform
+>    state rm` here, add the `claudeenterprise` provider, `terraform import` the same IDs into the
+>    equivalent `claudeenterprise_*` resources.
+> 2. **Analytics v2 and the Compliance / Compliance Content APIs were removed outright, not moved.**
+>    Also Claude-Enterprise-only, but on reflection they don't fit a Terraform resource model at all
+>    — pure reporting/audit reads with no desired-state to converge on. No replacement resource
+>    exists or is planned in either provider; call [the Analytics API](https://platform.claude.com/docs/en/manage-claude/analytics-api)
+>    / [the Compliance API](https://platform.claude.com/docs/en/manage-claude/compliance-api) directly
+>    instead. This removed the client's third auth mode (`compliance_api_key`) and everything that
+>    depended on `Client.HasCompliance()` / `WithComplianceAuth` / `ErrComplianceRequired` — none of
+>    that exists anymore, don't reintroduce it without a real reason to reconsider "doesn't fit the
+>    resource model."
 
-### Resources (14)
+### Resources (13)
 
 Admin API key compatible:
 
@@ -57,9 +62,8 @@ Admin API key compatible:
 | `claudeadmin_federation_rule_workspace` | Extends a rule to an additional workspace. Composite id. |
 | `claudeadmin_tunnel_certificate` | MCP tunnel CA cert (beta, `anthropic-beta: mcp-tunnels-2026-06-22` added automatically). Uses `/v1/tunnels` (public API). |
 | `claudeadmin_tunnel_token_rotation` | Declarative token rotation. Change `rotation_id` to trigger a new rotation; fresh `tunnel_token` becomes the sensitive output. |
-| `claudeadmin_compliance_content_deletion` | Hard-deletes user content (chat, chat_file, chat_generated_file, project, project_document) for eDiscovery / DLP / LGPD-GDPR erasure. Requires Compliance Access Key with scope `delete:compliance_user_data`. One-way. |
 
-### Data sources (45)
+### Data sources (26)
 
 Identity & membership: `claudeadmin_organization`, `claudeadmin_workspace[s]`, `claudeadmin_workspace_member[s]`, `claudeadmin_organization_member[s]`, `claudeadmin_invite[s]`.
 
@@ -67,23 +71,17 @@ Keys / CMEK: `claudeadmin_api_key[s]`, `claudeadmin_external_key[s]`.
 
 Rate limits: `claudeadmin_organization_rate_limits` (org baseline), `claudeadmin_workspace_rate_limits` (workspace overrides).
 
-FinOps reports (legacy v1): `claudeadmin_usage_report`, `claudeadmin_claude_code_usage_report`, `claudeadmin_cost_report`.
-
-Analytics v2 (Enterprise + `read:analytics` scope) — **mis-scoped, see breaking-change note above; candidate to move to `claudeenterprise` next**: `claudeadmin_activity_summaries`, `claudeadmin_token_usage_over_time`, `claudeadmin_per_user_token_usage`, `claudeadmin_cost_over_time`, `claudeadmin_per_user_cost`, `claudeadmin_user_activity`, `claudeadmin_skills_usage`, `claudeadmin_connectors_usage`, `claudeadmin_chat_projects_usage`.
+FinOps reports (legacy v1, Console-available): `claudeadmin_usage_report`, `claudeadmin_claude_code_usage_report`, `claudeadmin_cost_report`.
 
 Service accounts (Bearer auth): `claudeadmin_service_account[s]`, `claudeadmin_service_account_workspaces`, `claudeadmin_workspace_service_accounts`.
 
 MCP Tunnels (Bearer + beta): `claudeadmin_tunnel[s]`, `claudeadmin_tunnel_certificates`, `claudeadmin_tunnel_token`.
 
-Compliance API — **directory + activity metadata** (`compliance_api_key`, Enterprise): `claudeadmin_compliance_activities`, `claudeadmin_compliance_organizations`, `claudeadmin_compliance_organization_users`, `claudeadmin_compliance_organization_roles`, `claudeadmin_compliance_groups`, `claudeadmin_compliance_group_members`, `claudeadmin_compliance_organization_settings`.
-
-Compliance Content API — **user-generated content** for eDiscovery / DLP (same `compliance_api_key` but requires scope `read:compliance_user_data` / `delete:compliance_user_data`, Enterprise): `claudeadmin_compliance_chats`, `claudeadmin_compliance_chat_messages`, `claudeadmin_compliance_projects`, `claudeadmin_compliance_project_attachments`.
-
-The FinOps reports + analytics v2 + CMEK + spend limits + service accounts + federation are the **headline differentiation** vs `terraform-mars/terraform-provider-anthropic`, which covers only workspaces, api_keys, workspace_members, and invites.
+The FinOps reports + CMEK + service accounts + federation are the **headline differentiation** vs `terraform-mars/terraform-provider-anthropic`, which covers only workspaces, api_keys, workspace_members, and invites.
 
 ### Coverage vs Admin API docs
 
-We cover **every** endpoint group documented at https://platform.claude.com/docs/en/api/admin, plus Compliance API directory (`/v1/compliance/*`) and Compliance Content API (`/v1/compliance/apps/*`) as of v0.5.0. The client supports three auth modes (x-api-key admin, Bearer OAuth, x-api-key compliance); endpoints that reject Admin API keys (Service Accounts, Federation, MCP Tunnels) check `Client.HasOAuth()` upfront and return `ErrOAuthRequired`. Compliance endpoints check `Client.HasCompliance()` and return `ErrComplianceRequired`. MCP Tunnels endpoints automatically attach the `anthropic-beta: mcp-tunnels-2026-06-22` header via `WithBetaHeaders`. Audit Logs are NOT in the Admin API (confirmed via doc audit on 2026-06-10).
+We cover **every** endpoint group documented at https://platform.claude.com/docs/en/api/admin that fits a Console-organization, declarative-resource model. Deliberately excluded: Analytics v2, Compliance API, Compliance Content API — all Claude-Enterprise-only and, on reflection, pure reporting/audit reads with no desired-state to converge on (see the breaking-change note above; call those APIs directly instead of through this provider). The client supports two auth modes (x-api-key admin, Bearer OAuth); endpoints that reject Admin API keys (Service Accounts, Federation, MCP Tunnels) check `Client.HasOAuth()` upfront and return `ErrOAuthRequired`. MCP Tunnels endpoints automatically attach the `anthropic-beta: mcp-tunnels-2026-06-22` header via `WithBetaHeaders`. Audit Logs are NOT in the Admin API (confirmed via doc audit on 2026-06-10).
 
 Doc-noted limitations we accept:
 - `claudeadmin_tunnel_certificate` uses the Admin API path (`/v1/organizations/tunnels/...`) which is being deprecated in favor of `/v1/tunnels` on the public API. Track migration when the new path stabilizes.
@@ -102,8 +100,8 @@ main.go                                # provider entrypoint
 internal/provider/provider.go          # provider config + resource/data-source registry
 internal/provider/common.go            # shared client-unwrap helper + small types-utils
 internal/provider/workspace_shared.go  # data_residency object plumbing + tags helpers
-internal/provider/resource_*.go        # one file per resource (5 total)
-internal/provider/datasource_*.go      # one file per data source (12 total)
+internal/provider/resource_*.go        # one file per resource (13 total)
+internal/provider/datasource_*.go      # one file per data source (26 total)
 internal/anthropic/                    # HTTP client, one file per Admin API resource group
   client.go               # shared do() with x-api-key + anthropic-version
   organization.go         # GET /v1/organizations/me

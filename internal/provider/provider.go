@@ -15,9 +15,8 @@ import (
 )
 
 const (
-	envAdminAPIKey      = "ANTHROPIC_ADMIN_API_KEY"
-	envOAuthToken       = "ANTHROPIC_OAUTH_TOKEN"
-	envComplianceAPIKey = "ANTHROPIC_COMPLIANCE_API_KEY"
+	envAdminAPIKey = "ANTHROPIC_ADMIN_API_KEY"
+	envOAuthToken  = "ANTHROPIC_OAUTH_TOKEN"
 )
 
 type AnthropicProvider struct {
@@ -25,10 +24,9 @@ type AnthropicProvider struct {
 }
 
 type AnthropicProviderModel struct {
-	AdminAPIKey      types.String `tfsdk:"admin_api_key"`
-	OAuthToken       types.String `tfsdk:"oauth_token"`
-	ComplianceAPIKey types.String `tfsdk:"compliance_api_key"`
-	BaseURL          types.String `tfsdk:"base_url"`
+	AdminAPIKey types.String `tfsdk:"admin_api_key"`
+	OAuthToken  types.String `tfsdk:"oauth_token"`
+	BaseURL     types.String `tfsdk:"base_url"`
 }
 
 func New(version string) func() provider.Provider {
@@ -44,7 +42,12 @@ func (p *AnthropicProvider) Metadata(_ context.Context, _ provider.MetadataReque
 
 func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Anthropic (Claude) platform resources via the Admin API. Most endpoints use the Admin API key (`admin_api_key`). A handful of newer surfaces — Service Accounts, Federation Issuers/Rules, MCP Tunnels — require OAuth Bearer auth (`oauth_token`) and reject the Admin API key. Configure both if you intend to manage those.",
+		Description: "Manages Claude Console (Claude Platform) organization resources via the Admin API. Most " +
+			"endpoints use the Admin API key (`admin_api_key`). A handful of newer surfaces — Service Accounts, " +
+			"Federation Issuers/Rules, MCP Tunnels — require OAuth Bearer auth (`oauth_token`) and reject the Admin " +
+			"API key. Configure both if you intend to manage those. For Claude Enterprise (claude.ai) organizations " +
+			"— members with the `managed` role, RBAC groups, custom roles, spend limits — use the sibling provider " +
+			"`sauterdigital/claudeenterprise` instead; a key from one organization type cannot manage the other.",
 		Attributes: map[string]schema.Attribute{
 			"admin_api_key": schema.StringAttribute{
 				Description: "Anthropic Admin API key (`sk-ant-admin-...`). May also be set via the ANTHROPIC_ADMIN_API_KEY environment variable. Used as `x-api-key` header.",
@@ -53,11 +56,6 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 			},
 			"oauth_token": schema.StringAttribute{
 				Description: "OAuth Bearer token (user OAuth or WIF-minted service account token). May also be set via ANTHROPIC_OAUTH_TOKEN. When set, Bearer auth is used for ALL requests (the API's modern preferred pattern). Required for endpoints that reject Admin API keys: Service Accounts (Create/Update/Archive), SA Workspace Members, Federation Issuers, Federation Rules, MCP Tunnels.",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"compliance_api_key": schema.StringAttribute{
-				Description: "Compliance API key (`sk-ant-api01-...`). May also be set via ANTHROPIC_COMPLIANCE_API_KEY. Used exclusively for `/v1/compliance/*` endpoints — those reject both Admin API keys and OAuth bearer tokens. Required to use any `claudeadmin_compliance_*` data source.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -100,17 +98,9 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		baseURL = data.BaseURL.ValueString()
 	}
 
-	complianceKey := os.Getenv(envComplianceAPIKey)
-	if !data.ComplianceAPIKey.IsNull() && !data.ComplianceAPIKey.IsUnknown() {
-		complianceKey = data.ComplianceAPIKey.ValueString()
-	}
-
 	client := anthropic.NewClient(baseURL, apiKey, p.version)
 	if oauthToken != "" {
 		client.SetOAuthToken(oauthToken)
-	}
-	if complianceKey != "" {
-		client.SetComplianceKey(complianceKey)
 	}
 	resp.DataSourceData = client
 	resp.ResourceData = client
@@ -131,7 +121,6 @@ func (p *AnthropicProvider) Resources(_ context.Context) []func() resource.Resou
 		NewFederationRuleWorkspaceResource,
 		NewTunnelCertificateResource,
 		NewTunnelTokenRotationResource,
-		NewComplianceContentDeletionResource,
 	}
 }
 
@@ -155,15 +144,6 @@ func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.D
 		NewUsageReportDataSource,
 		NewClaudeCodeUsageReportDataSource,
 		NewCostReportDataSource,
-		NewActivitySummariesDataSource,
-		NewTokenUsageOverTimeDataSource,
-		NewPerUserTokenUsageDataSource,
-		NewCostOverTimeDataSource,
-		NewPerUserCostDataSource,
-		NewUserActivityDataSource,
-		NewSkillsUsageDataSource,
-		NewConnectorsUsageDataSource,
-		NewChatProjectsUsageDataSource,
 		NewServiceAccountDataSource,
 		NewServiceAccountsDataSource,
 		NewServiceAccountWorkspacesDataSource,
@@ -172,16 +152,5 @@ func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.D
 		NewTunnelsDataSource,
 		NewTunnelCertificatesDataSource,
 		NewTunnelTokenDataSource,
-		NewComplianceActivitiesDataSource,
-		NewComplianceOrganizationsDataSource,
-		NewComplianceOrganizationUsersDataSource,
-		NewComplianceOrganizationRolesDataSource,
-		NewComplianceGroupsDataSource,
-		NewComplianceGroupMembersDataSource,
-		NewComplianceOrganizationSettingsDataSource,
-		NewComplianceChatsDataSource,
-		NewComplianceChatMessagesDataSource,
-		NewComplianceProjectsDataSource,
-		NewComplianceProjectAttachmentsDataSource,
 	}
 }
